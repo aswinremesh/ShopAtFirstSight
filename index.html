@@ -1,14 +1,33 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f7f6f1" />
-    <meta name="description" content="Discover curious finds from independent shops around your corner." />
-    <title>ShopAtFirstSight — Discover local</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f6f1">
+  <meta name="description" content="Discover overlooked products from independent shops near you.">
+  <title>ShopAtFirstSight — Discover local</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="logo">ShopAt<span>FirstSight</span></div>
+      <div class="location">⌖ <span>Shopping near <b>Dublin 2</b> · <span id="radius-label"></span></span></div>
+      <div class="topright">
+        <nav class="roles" aria-label="Switch view">
+          <button class="role" data-act="role" data-role="shopper">Shopper</button>
+          <button class="role" data-act="role" data-role="owner">Shop owner</button>
+        </nav>
+        <button class="bell" data-act="notes" aria-label="Notifications">🔔<span id="bellcount"></span></button>
+        <div class="user" aria-hidden="true">S</div>
+      </div>
+      <div class="notes" id="notes" hidden></div>
+    </header>
+    <main id="view"></main>
+    <footer class="foot">Demo prototype · sample inventory stored in your browser · <button data-act="reset">Reset demo</button></footer>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="overlay" id="overlay"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+  <script src="app.js"></script>
+</body>
 </html>
