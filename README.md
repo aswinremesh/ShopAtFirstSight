@@ -9,6 +9,12 @@ npm install
 npm run dev
 ```
 
+## Enable live AI product ideas
+
+The expanded product card calls a server-side endpoint when it is deployed on Vercel. Add `OPENAI_API_KEY` to the project's Vercel environment variables, then redeploy. The key stays on the server and is never exposed to the browser.
+
+Until that environment variable is configured, the interface clearly shows a sample idea so the frontend demo remains usable.
+
 ## Shopper demo
 
 - Browse a local discovery feed and filter by interest.

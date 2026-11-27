@@ -11,4 +11,16 @@
 .card-reserve { width: 100%; margin-top: 14px; }
 .community > div { font-size: 12px; font-weight: 700; }
 .community p { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 5px 0 0; }
+.card[role="button"] { cursor: pointer; }
+.card[role="button"]:focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
+.expand-hint { border-top: 1px solid var(--line); color: var(--green); display: flex; font-size: 11px; font-weight: 700; justify-content: space-between; margin-top: 13px; padding-top: 12px; }
+.expand-hint span { font-size: 16px; line-height: 10px; }
+.ai-panel { background: #edf3e3; border: 1px solid #d8e4c5; border-radius: 12px; margin-top: 14px; padding: 13px; }
+.ai-panel-head { align-items: center; display: flex; font-size: 12px; font-weight: 800; justify-content: space-between; }
+.ai-sparkle { color: var(--orange); font-size: 16px; padding-right: 4px; }
+.refresh-idea { background: transparent; border: 0; color: var(--green); font-size: 11px; font-weight: 700; padding: 4px; }
+.refresh-idea:disabled { color: var(--muted); cursor: wait; }
+.ai-copy, .ai-loading { color: #4e5f53; font-size: 12px; line-height: 1.55; margin: 8px 0 5px; }
+.ai-loading { color: var(--muted); font-style: italic; }
+.ai-source { color: #72816d; font-size: 10px; }
 @media (max-width: 480px) { .saved-card .photo { height: 165px; } .shop .fresh { font-size: 9px; } }
