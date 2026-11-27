@@ -1,10 +1,13 @@
 # ShopAtFirstSight
 
-A responsive frontend prototype for discovering overlooked products from nearby independent shops.
+A responsive React + TypeScript prototype for discovering overlooked products from nearby independent shops.
 
 ## Run locally
 
-Open `index.html` in a browser. The prototype uses sample inventory and needs no build step or API key.
+```bash
+npm install
+npm run dev
+```
 
 ## Shopper demo
 
@@ -15,4 +18,4 @@ Open `index.html` in a browser. The prototype uses sample inventory and needs no
 
 ## Backend integration
 
-The demo inventory is defined in the `products` array in `index.html`. Replace it with inventory from the team backend. Connect saved finds and pickup requests to the corresponding API endpoints. Stock availability and pickup confirmation are simulated in this frontend prototype.
+Demo inventory is in `src/data.ts`, with its shape in `src/types.ts`. Replace it with the team's inventory API when ready. Saved finds are currently held in component state, and pickup requests are simulated. Stock availability must be confirmed by a shop before a real reservation is made.
