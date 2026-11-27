@@ -1,48 +1,41 @@
-# ShopAtFirstSight (Little Finds)
+# ShopAtFirstSight
 
-Swipe-to-shop for independent local shops. Shoppers swipe through nearby products, and shops use it to sell slow-moving, seasonal and one-off stock, and to test demand before ordering something new.
+Swipe-to-shop for nearby independent businesses. Shoppers discover products that might otherwise be overlooked; shops can improve the visibility of slow-moving, seasonal, near-expiry and one-off stock.
 
 ## Run locally
 
-No build step or API key needed. Serve the folder and open it:
+No package installation is required for the frontend demo.
 
 ```bash
 python3 -m http.server 8080
 ```
 
-Then visit http://localhost:8080. (Opening `index.html` directly also works.)
+Open `http://localhost:8080` in a browser.
 
-## Shopper features
+## Shopper experience
 
-- **Swipe feed**: drag right to *want*, left to *pass*, up for *maybe*. Arrow keys work too, and Z undoes the last swipe.
-- **Smart ranking with "Why am I seeing this?"**: cards are ranked by interests, what you've wanted before, deals, low stock, distance and hidden-gem status, with a small daily shuffle.
-- **Tune your feed**: pick interests and set a budget and a radius.
-- **Daily local drop**: 15 finds a day, with an "explorer mode" to keep going. Items you passed come back the next day.
-- **Wanted and Maybe lists**: price-drop badges, a share-list button, and a one-tap move from Maybe to Wanted.
-- **Reserve and collect**: hold an item for 30 or 60 minutes and pay in store. Stock goes down while the hold is live and comes back if the hold expires or is cancelled.
-- **Pickup route**: a map that groups your holds into one walking trip, with countdown timers.
-- **Flash deals and near-expiry rescue**: countdown badges, best-before labels and surprise bags.
-- **Bring it in**: vote on products a shop is thinking of stocking. When a campaign hits its target, the shop orders it and voters get first access.
-- **Neighbourhood trail**: points, levels, shop stamps and a €5 voucher. Members-only prices unlock at 100 points.
-- **Notifications**: price drops on saved items, a warning 10 minutes before a hold expires, and Bring-it-in news.
+- Swipe right to want an item, left to pass it, and up for maybe.
+- Click the current product card to expand it and receive a practical AI use idea.
+- Save items, place simulated reserve-and-collect holds, and view a grouped pickup route.
+- Browse local flash deals, near-expiry rescue items, and community demand campaigns.
 
-## Shop owner dashboard
+## Shop owner experience
 
-Switch to **Shop owner** in the header.
+- Review item health, demand, holds and estimated pickup revenue.
+- Create flash deals, restock items and make bundles from slow-moving inventory.
+- Add stock and use the in-app description helper for a draft listing.
 
-- KPIs: views, wants, maybes, reservations, collected, and view-to-hold rate.
-- Stock health for each item (New / Steady / Warm / Slow mover / Selling fast) with suggestions, plus one-click **⚡ 20% off for 3h** and **+5 restock** buttons.
-- **Bundle slow movers**: combines slow stock into a discounted bundle that goes straight onto the feed.
-- **Quick add stock**: price, quantity, clearance discount and how long it runs, best-before date, visibility (everyone / members / quiet clearance), a shopkeeper note, and an auto-written description.
-- **Demand insights**: anonymous wants by category, the average price of wanted vs passed items, and how well bundles convert.
-- **Bring it in campaigns**: create a demand test and watch the votes come in.
+## Enable live AI product ideas
+
+When deployed to Vercel, add `OPENAI_API_KEY` in the project environment variables and redeploy. The endpoint at `api/product-suggestions.mjs` sends the request to OpenAI server-side, so the key never reaches the browser.
+
+Without that environment variable the expandable card shows a clearly labelled sample idea, keeping the local frontend demo usable.
 
 ## Code layout
 
-- `index.html`: the app shell
-- `styles.css`: styles
-- `app.js`: seed data, state (saved in `localStorage`), feed ranking, rendering and actions
+- `index.html`: app shell
+- `styles.css`: layout and visual styling
+- `app.js`: sample data, local browser state, rendering and interactions
+- `api/product-suggestions.mjs`: optional server-side AI endpoint for Vercel
 
-## Backend integration
-
-Replace `seed()` / `load()` / `save()` in `app.js` with API calls. Products, campaigns, reservations and swipe stats are plain objects, ready to map to endpoints. Holds, pickups and the "Collected" confirmation are simulated in this prototype.
+The inventory, reservations and swipe analytics are sample data. Replace the `seed()`, `load()` and `save()` functions in `app.js` with backend calls when the data layer is ready.

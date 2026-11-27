@@ -1,10 +1,10 @@
 'use strict';
-/* Little Finds — swipe-to-shop prototype for local independent shops.
+/* ShopAtFirstSight — swipe-to-shop prototype for local independent shops.
    All data is sample data kept in localStorage; swap the seed()/save() layer for the team backend. */
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const MIN = 60e3, HOUR = 60 * MIN, DAY_LIMIT = 15, KEY = 'littlefinds:v2';
+const MIN = 60e3, HOUR = 60 * MIN, DAY_LIMIT = 15, KEY = 'shopatfirstsight:v3';
 const CATS = [['Food', '🥕'], ['Home', '🏡'], ['Gifts', '🎁'], ['DIY', '🧵'], ['Bundles', '🧺']];
 const EMOJIS = ['🫒', '🥣', '🌼', '🍪', '🎀', '🌿', '📓', '☕', '🍯', '🪡', '🎨', '🥐', '🪴', '✏️', '🕯️', '🧴', '🧦', '🧀', '🌶️', '🧶', '🏺', '📚', '🧸', '💐'];
 const SHOPS = [
@@ -76,7 +76,7 @@ function seed() {
 
 /* ---------- state ---------- */
 let S = load();
-const ui = { view: 'discover', filter: 'All', lastViewed: null, busy: false, hold: 30, pendingRender: false, toastT: 0 };
+const ui = { view: 'discover', filter: 'All', lastViewed: null, busy: false, hold: 30, pendingRender: false, toastT: 0, expandedId: null, ideas: {} };
 function load() {
   try { const raw = localStorage.getItem(KEY); if (raw) { const s = JSON.parse(raw); if (s && s.version === 2) return s; } } catch (e) { /* storage unavailable */ }
   return seed();
@@ -162,7 +162,8 @@ function shopperView() {
 
 function cardHTML(p, top, why) {
   const s = shop(p.shop);
-  return `<article class="card ${top ? 'top' : 'behind'}" ${top ? `id="topcard" data-id="${p.id}"` : ''} aria-label="${esc(p.name)}">
+  const expanded = top && ui.expandedId === p.id;
+  return `<article class="card ${top ? 'top' : 'behind'} ${expanded ? 'expanded' : ''}" ${top ? `id="topcard" data-id="${p.id}"` : ''} aria-label="${esc(p.name)}">
     <div class="photo">
       <span class="badges">${isDeal(p) ? `<span class="deal">−${pct(p)}% · <span data-until="${p.dealUntil}">${fmtLeft(p.dealUntil - Date.now())}</span></span>` : ''}${p.badge ? `<span class="badge">${esc(p.badge)}</span>` : ''}</span>
       ${p.stock <= 3 ? `<span class="low">Only ${p.stock} left</span>` : ''}
@@ -176,7 +177,45 @@ function cardHTML(p, top, why) {
       ${p.bundle ? `<div class="bundle">Inside: ${p.bundle.map(esc).join(', ')}${p.value ? ` · <b>worth ${money(p.value)}</b>` : ''}</div>` : ''}
       ${p.story ? `<blockquote class="story">“${esc(p.story)}” <cite>— ${esc(s.name)}</cite></blockquote>` : ''}
       <div class="shop"><span><strong>${esc(s.name)}</strong> · ${s.distance} km</span>${p.bestBefore ? `<span class="bb">Best before ${esc(p.bestBefore)}</span>` : `<span class="fresh">● Stock checked ${(p.id * 7) % 50 + 5} min ago</span>`}</div>
+      ${top ? `<button class="expand-product" data-act="expand" data-id="${p.id}" aria-expanded="${expanded}">${expanded ? 'Hide product idea' : 'Tap for an AI use idea'} <span>${expanded ? '⌃' : '⌄'}</span></button>` : ''}
+      ${expanded ? ideaPanel(p) : ''}
     </div></article>`;
+}
+
+function sampleIdea(p) {
+  const ideas = {
+    Food: `Use ${p.name} as the small twist in a familiar meal. Start with a little, taste as you go, and let it add character rather than take over the whole dish.`,
+    Home: `Give ${p.name} a job you will see every day: try it in a breakfast corner, entryway drop zone, or open shelf alongside one plant and one favourite book.`,
+    Gifts: `Make ${p.name} feel personal with a handwritten note about why it reminded you of them. The local, one-of-a-kind detail is already doing most of the work.`,
+    DIY: `Set aside an unhurried 20 minutes for ${p.name}. Keep the first version simple and treat it as a small experiment instead of aiming for perfection.`,
+    Bundles: `Open ${p.name} with a friend and choose one thing to try first. It turns an unexpected mix into a small local tasting or making session.`,
+  };
+  return ideas[p.cat] || `Start small with ${p.name}, then make it part of a moment you will enjoy rather than another thing on the to-do list.`;
+}
+
+function ideaPanel(p) {
+  const idea = ui.ideas[p.id];
+  if (idea?.status === 'loading') return `<section class="ai-panel" aria-live="polite"><div class="ai-head"><b><span>✦</span> AI use idea</b></div><p class="ai-loading">Finding a useful way to make this yours…</p></section>`;
+  if (idea?.status === 'ready') return `<section class="ai-panel" aria-live="polite"><div class="ai-head"><b><span>✦</span> AI use idea</b><button data-act="newidea" data-id="${p.id}">New idea</button></div><p>${esc(idea.text)}</p><small>${idea.source === 'ai' ? 'Generated for this product' : 'Sample idea — add OPENAI_API_KEY to enable live AI'}</small></section>`;
+  return '';
+}
+
+async function loadIdea(p) {
+  ui.ideas[p.id] = { status: 'loading' };
+  render();
+  try {
+    const response = await fetch('/api/product-suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product: { name: p.name, category: p.cat, why: p.why } }),
+    });
+    const result = response.ok ? await response.json() : null;
+    if (!result || typeof result.suggestion !== 'string' || !result.suggestion.trim()) throw new Error('No suggestion returned');
+    ui.ideas[p.id] = { status: 'ready', text: result.suggestion.trim(), source: 'ai' };
+  } catch (error) {
+    ui.ideas[p.id] = { status: 'ready', text: sampleIdea(p), source: 'sample' };
+  }
+  if (ui.expandedId === p.id) render();
 }
 
 function discoverView() {
@@ -316,7 +355,7 @@ function ownerView() {
   <div class="layout" style="grid-template-columns:1fr"><div>
     <div class="kpis">${kpis.map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('')}</div>
     <div class="ownergrid"><div>
-      <section class="panel"><div class="panelhead"><h3>Your stock on Little Finds</h3><button class="btn tiny warn" data-act="autobundle" ${slow >= 2 ? '' : 'disabled'} title="Combine slow movers into a discounted bundle">🧺 Bundle ${slow} slow movers</button></div>
+      <section class="panel"><div class="panelhead"><h3>Your stock on ShopAtFirstSight</h3><button class="btn tiny warn" data-act="autobundle" ${slow >= 2 ? '' : 'disabled'} title="Combine slow movers into a discounted bundle">🧺 Bundle ${slow} slow movers</button></div>
         <p class="lead">Est. revenue from collected pickups: <b>${money(Math.round(revenue))}</b>. Health is based on how often a card is seen vs. wanted vs. reserved.</p>
         <div class="tablewrap"><table><thead><tr><th>Item</th><th class="num">Stock</th><th class="num">Views</th><th class="num">Wants</th><th class="num">Holds</th><th class="num">Sold</th><th>Health</th><th></th></tr></thead><tbody>
         ${mine.length ? mine.map(p => { const [k, l, tip] = health(p); return `<tr><td><b>${esc(p.emoji)} ${esc(p.name)}</b><div class="tip">${money(p.price)}${p.was ? ` <s>${money(p.was)}</s>` : ''}${isDeal(p) ? ` · deal ends in <span data-until="${p.dealUntil}">${fmtLeft(p.dealUntil - Date.now())}</span>` : ''}${p.visibility !== 'public' ? ` · ${p.visibility}` : ''}</div></td>
@@ -393,7 +432,7 @@ function bindDrag(el) {
   });
   const end = () => {
     if (!down) return; down = false; el.style.transition = '';
-    if (dx > 100) fly('like'); else if (dx < -100) fly('pass'); else if (dy < -110 && Math.abs(dx) < 80) fly('maybe');
+    if (dx > 100) { el.dataset.swiped = 'true'; fly('like'); } else if (dx < -100) { el.dataset.swiped = 'true'; fly('pass'); } else if (dy < -110 && Math.abs(dx) < 80) { el.dataset.swiped = 'true'; fly('maybe'); }
     else { el.style.transform = ''; ['like', 'pass', 'maybe'].forEach(k => st(k).style.opacity = 0); }
   };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
@@ -416,8 +455,8 @@ function openReserve(id) {
     <button class="confirm" data-act="confirmres" data-id="${p.id}">Reserve · +10 pts</button><button class="cancel" data-act="closemodal">Keep browsing</button>`);
 }
 function share(p) {
-  const text = `Found this at ${shop(p.shop).name}: ${p.name} for ${money(p.price)} on Little Finds`;
-  if (navigator.share) navigator.share({ title: 'Little Finds', text }).catch(() => {});
+  const text = `Found this at ${shop(p.shop).name}: ${p.name} for ${money(p.price)} on ShopAtFirstSight`;
+  if (navigator.share) navigator.share({ title: 'ShopAtFirstSight', text }).catch(() => {});
   else copy(text, 'Copied — send it to a friend');
 }
 function copy(text, msg) {
@@ -449,7 +488,14 @@ const A = {
   swipe: d => fly(d.kind),
   undo,
   share: () => { const t = feed()[0]; if (t) share(t.p); },
-  sharelist: () => copy('My Little Finds wishlist:\n' + S.products.filter(p => S.swipes[p.id] === 'like').map(p => `• ${p.name} — ${money(p.price)} at ${shop(p.shop).name}`).join('\n'), 'Wishlist copied — paste it to a friend'),
+  sharelist: () => copy('My ShopAtFirstSight wishlist:\n' + S.products.filter(p => S.swipes[p.id] === 'like').map(p => `• ${p.name} — ${money(p.price)} at ${shop(p.shop).name}`).join('\n'), 'Wishlist copied — paste it to a friend'),
+  expand: d => {
+    const p = prod(+d.id); if (!p) return;
+    if (ui.expandedId === p.id) { ui.expandedId = null; render(); return; }
+    ui.expandedId = p.id;
+    if (ui.ideas[p.id]?.status === 'ready') render(); else loadIdea(p);
+  },
+  newidea: d => { const p = prod(+d.id); if (p) loadIdea(p); },
   unlimited: () => { S.drop.unlimited = true; save(); render(); },
   widen: () => { S.prefs.radius = 3; S.prefs.budget = 100; ui.filter = 'All'; save(); render(); },
   clearpasses: () => { for (const id in S.swipes) if (S.swipes[id] === 'pass') delete S.swipes[id]; save(); render(); },
@@ -504,7 +550,12 @@ const A = {
 /* ---------- events ---------- */
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
-  if (!b) { if (!e.target.closest('#notes')) $('#notes').hidden = true; return; }
+  if (!b) {
+    const card = e.target.closest('.card.top');
+    if (card && card.dataset.swiped !== 'true' && !e.target.closest('.ai-panel')) { A.expand({ id: card.dataset.id }); return; }
+    if (!e.target.closest('#notes')) $('#notes').hidden = true;
+    return;
+  }
   if (b.tagName === 'SELECT') return;
   if (b.dataset.act !== 'notes') $('#notes').hidden = true;
   A[b.dataset.act]?.(b.dataset, b, e);
